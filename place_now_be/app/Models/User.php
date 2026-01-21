@@ -2,47 +2,70 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role',
+        'phone',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    // Seller relacije.
+
+    public function properties(): HasMany
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(Property::class, 'seller_id');
+    }
+
+    public function issuedInvoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'issued_by');
+    }
+
+    public function assignedMaintenanceRequests(): HasMany
+    {
+        return $this->hasMany(MaintenanceRequest::class, 'assigned_to');
+    }
+
+    public function sellerReservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class, 'seller_id');
+    }
+
+    // Buyer relacije.
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class, 'buyer_id');
+    }
+
+    public function paidInvoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'paid_by');
+    }
+
+    public function reportedMaintenanceRequests(): HasMany
+    {
+        return $this->hasMany(MaintenanceRequest::class, 'reported_by');
     }
 }
