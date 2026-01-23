@@ -16,22 +16,23 @@ class PropertyController extends Controller
             'q' => ['nullable', 'string', 'max:120'],
             'city' => ['nullable', 'string', 'max:120'],
             'status' => ['nullable', Rule::in(['available', 'unavailable', 'paused'])],
-            'sort' => ['nullable', Rule::in(['title', 'city', 'price_per_night', 'status'])],
+            'sort' => ['nullable', Rule::in(['title', 'city', 'price_per_night', 'status', 'id'])],
             'dir' => ['nullable', Rule::in(['asc', 'desc'])],
         ]);
 
-        $q = Property::query();
+        $query = Property::query();
 
-        $q->when($validated['status'] ?? null, fn($x) => $x->where('status', $validated['status']), fn($x) => $x->where('status', 'available'));
-        $q->when($validated['q'] ?? null, fn($x) => $x->where('title', 'like', '%' . $validated['q'] . '%'));
-        $q->when($validated['city'] ?? null, fn($x) => $x->where('city', 'like', '%' . $validated['city'] . '%'));
+        $query->when($validated['status'] ?? null, fn($x) => $x->where('status', $validated['status']));
+        $query->when($validated['q'] ?? null, fn($x) => $x->where('title', 'like', '%' . $validated['q'] . '%'));
+        $query->when($validated['city'] ?? null, fn($x) => $x->where('city', 'like', '%' . $validated['city'] . '%'));
 
         $sort = $validated['sort'] ?? 'id';
         $dir = $validated['dir'] ?? 'desc';
 
-        return response()->json([
+        $paginator = $query->orderBy($sort, $dir)->paginate(6)->withQueryString();
+
+        return PropertyResource::collection($paginator)->additional([
             'success' => true,
-            'data' => PropertyResource::collection($q->orderBy($sort, $dir)->paginate(6)),
         ]);
     }
 
