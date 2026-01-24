@@ -37,7 +37,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-left">
-        <img src="/images/commercial.gif" alt="Commercial" />
+        <img src="/images/commercial.jpg" alt="Commercial" />
       </div>
 
       <div className="auth-right">
