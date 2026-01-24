@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { FiGithub, FiLinkedin, FiMail } from "react-icons/fi";
 
 export default function Footer() {
