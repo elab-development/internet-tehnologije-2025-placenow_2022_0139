@@ -1,0 +1,1138 @@
+openapi: 3.0.3
+info:
+  title: PlaceNow API
+  version: 1.0.0
+  description: >
+    OpenAPI specifikacija za PlaceNow (Laravel + Sanctum). Base path: /api.
+servers:
+  - url: /api
+    description: Laravel API base
+
+components:
+  securitySchemes:
+    sanctumBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+      description: "Laravel Sanctum token. Header: Authorization: Bearer {token}"
+
+  schemas:
+    ValidationErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: The given data was invalid.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required: [message, errors]
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Nemate dozvolu.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required: [success, message, errors]
+
+    NullDataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          nullable: true
+          example: Odjava uspešna.
+        data:
+          nullable: true
+      required: [success, data]
+
+    User:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: Ana }
+        email: { type: string, format: email, example: ana@example.com }
+        role: { type: string, enum: [buyer, seller, admin], example: buyer }
+        phone: { type: string, nullable: true, example: "+38164123456" }
+        created_at: { type: string, format: date-time, example: "2026-02-12T12:00:00Z" }
+      required: [id, name, email, role]
+
+    AuthPayload:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+          example: "1|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      required: [user, token]
+
+    AuthSuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string, example: Prijava uspešna. }
+        data:
+          $ref: "#/components/schemas/AuthPayload"
+      required: [success, message, data]
+
+    MeSuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string, example: Ulogovani korisnik. }
+        data:
+          type: object
+          properties:
+            user:
+              $ref: "#/components/schemas/User"
+          required: [user]
+      required: [success, message, data]
+
+    Property:
+      type: object
+      properties:
+        id: { type: integer, example: 10 }
+        seller_id: { type: integer, example: 2 }
+        title: { type: string, example: "Modern Apartment" }
+        description: { type: string, nullable: true, example: "Near city center" }
+        address: { type: string, example: "Knez Mihailova 1" }
+        city: { type: string, example: "Belgrade" }
+        price_per_night: { type: number, example: 80.5 }
+        status: { type: string, enum: [available, unavailable, paused], example: available }
+        360_image_url: { type: string, nullable: true, example: "https://example.com/pano.jpg" }
+        3d_sketchfab_model_url: { type: string, nullable: true, example: "https://sketchfab.com/models/abc" }
+        created_at: { type: string, format: date-time, example: "2026-02-12T12:00:00Z" }
+      required: [id, seller_id, title, address, city, price_per_night, status]
+
+    Reservation:
+      type: object
+      properties:
+        id: { type: integer, example: 101 }
+        property_id: { type: integer, example: 10 }
+        buyer_id: { type: integer, example: 5 }
+        seller_id: { type: integer, example: 2 }
+        start_date: { type: string, format: date, example: "2026-03-01" }
+        end_date: { type: string, format: date, example: "2026-03-10" }
+        guests: { type: integer, example: 2 }
+        total_price: { type: number, example: 724.5 }
+        status: { type: string, enum: [pending, confirmed, cancelled, completed], example: pending }
+        property:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Property"
+        created_at: { type: string, format: date-time, example: "2026-02-12T12:00:00Z" }
+      required: [id, property_id, buyer_id, seller_id, start_date, end_date, guests, total_price, status]
+
+    Invoice:
+      type: object
+      properties:
+        id: { type: integer, example: 501 }
+        reservation_id: { type: integer, example: 101 }
+        issued_by: { type: integer, example: 2 }
+        paid_by: { type: integer, nullable: true, example: 5 }
+        amount: { type: number, example: 150 }
+        description: { type: string, nullable: true, example: "Cleaning fee" }
+        due_date: { type: string, format: date, example: "2026-02-20" }
+        paid_at: { type: string, format: date-time, nullable: true, example: "2026-02-13T10:05:00Z" }
+        status: { type: string, enum: [unpaid, paid, overdue, cancelled], example: unpaid }
+        reservation:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Reservation"
+        created_at: { type: string, format: date-time, example: "2026-02-12T12:00:00Z" }
+      required: [id, reservation_id, issued_by, amount, due_date, status]
+
+    MaintenanceRequest:
+      type: object
+      properties:
+        id: { type: integer, example: 901 }
+        property_id: { type: integer, example: 10 }
+        reported_by: { type: integer, example: 5 }
+        assigned_to: { type: integer, nullable: true, example: 2 }
+        title: { type: string, example: "Broken faucet" }
+        description: { type: string, example: "Kitchen faucet is leaking." }
+        priority: { type: string, enum: [low, medium, high], example: medium }
+        status: { type: string, enum: [open, in_progress, resolved, closed], example: open }
+        reported_at: { type: string, format: date-time, example: "2026-02-12T12:00:00Z" }
+        resolved_at: { type: string, format: date-time, nullable: true, example: null }
+        property:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Property"
+        created_at: { type: string, format: date-time, example: "2026-02-12T12:00:00Z" }
+      required: [id, property_id, reported_by, title, description, priority, status, reported_at]
+
+    ResourceCollection_Property:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Property"
+        links:
+          type: object
+          nullable: true
+          additionalProperties: true
+        meta:
+          type: object
+          nullable: true
+          additionalProperties: true
+      required: [data]
+
+    ResourceCollection_Reservation:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reservation"
+      required: [data]
+
+    ResourceCollection_Invoice:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Invoice"
+      required: [data]
+
+    ResourceCollection_MaintenanceRequest:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MaintenanceRequest"
+      required: [data]
+
+    AdminMetricsSummary:
+      type: object
+      properties:
+        total_reservations: { type: integer, example: 60 }
+        active_properties: { type: integer, example: 12 }
+        open_maintenance_requests: { type: integer, example: 7 }
+        revenue_by_month:
+          type: array
+          items:
+            type: object
+            properties:
+              month: { type: string, example: "2026-02" }
+              revenue: { type: number, example: 1200.5 }
+            required: [month, revenue]
+      required: [total_reservations, active_properties, open_maintenance_requests, revenue_by_month]
+
+    AdminReportResponseData:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            date_from: { type: string, format: date, example: "2026-02-01" }
+            date_to: { type: string, format: date, example: "2026-02-28" }
+          required: [date_from, date_to]
+        paid_revenue: { type: number, example: 450.0 }
+        reservations:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: >
+            Raw Reservation models with loaded relations (property, invoices).
+            (AdminMetricsController returns Eloquent models, not Resources.)
+      required: [period, paid_revenue, reservations]
+
+security:
+  - sanctumBearer: []
+
+tags:
+  - name: Auth
+  - name: Properties
+  - name: Reservations
+  - name: Maintenance
+  - name: Invoices
+  - name: Admin
+
+paths:
+  /register:
+    post:
+      tags: [Auth]
+      summary: Register (creates buyer + token)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 2, maxLength: 100 }
+                email: { type: string, format: email, maxLength: 150 }
+                password: { type: string, minLength: 6, maxLength: 255 }
+                phone: { type: string, nullable: true, maxLength: 40 }
+              required: [name, email, password]
+            examples:
+              register:
+                value:
+                  name: "Maja"
+                  email: "maja@example.com"
+                  password: "password"
+                  phone: "+38164123456"
+      responses:
+        "201":
+          description: Created (user + token)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSuccessResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+
+  /login:
+    post:
+      tags: [Auth]
+      summary: Login (returns Sanctum token)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email, maxLength: 150 }
+                password: { type: string, maxLength: 255 }
+              required: [email, password]
+            examples:
+              login_buyer:
+                value: { email: "buyer@example.com", password: "password" }
+              login_seller:
+                value: { email: "seller@example.com", password: "password" }
+              login_admin:
+                value: { email: "admin@placenow.com", password: "adminplacenow" }
+      responses:
+        "200":
+          description: Success (user + token)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSuccessResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+
+  /logout:
+    post:
+      tags: [Auth]
+      summary: Logout (deletes current token)
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NullDataResponse"
+        "401":
+          description: Unauthorized
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: Get logged-in user
+      responses:
+        "200":
+          description: Me
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeSuccessResponse"
+        "401":
+          description: Unauthorized
+
+  /properties:
+    get:
+      tags: [Properties]
+      summary: Public list properties (filter/sort + pagination)
+      security: []
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string, maxLength: 120 }
+          required: false
+        - in: query
+          name: city
+          schema: { type: string, maxLength: 120 }
+          required: false
+        - in: query
+          name: status
+          schema: { type: string, enum: [available, unavailable, paused] }
+          required: false
+        - in: query
+          name: sort
+          schema: { type: string, enum: [title, city, price_per_night, status, id] }
+          required: false
+        - in: query
+          name: dir
+          schema: { type: string, enum: [asc, desc] }
+          required: false
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+          required: false
+      responses:
+        "200":
+          description: Paginated list (Resource collection + success=true)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ResourceCollection_Property"
+                  - type: object
+                    properties:
+                      success: { type: boolean, example: true }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+
+    post:
+      tags: [Properties]
+      summary: Seller creates property
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, minLength: 2, maxLength: 200 }
+                description: { type: string, nullable: true, maxLength: 3000 }
+                address: { type: string, minLength: 2, maxLength: 255 }
+                city: { type: string, minLength: 2, maxLength: 120 }
+                price_per_night: { type: number, minimum: 0 }
+                status: { type: string, enum: [available, unavailable, paused] }
+                360_image_url: { type: string, nullable: true, format: uri, maxLength: 500 }
+                3d_sketchfab_model_url: { type: string, nullable: true, format: uri, maxLength: 500 }
+              required: [title, address, city, price_per_night, status]
+            examples:
+              create_property:
+                value:
+                  title: "Cozy Studio"
+                  description: "Great for couples"
+                  address: "Nemanjina 10"
+                  city: "Belgrade"
+                  price_per_night: 55
+                  status: "available"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Nekretnina kreirana." }
+                  data: { $ref: "#/components/schemas/Property" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not seller)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+
+  /properties/{property}:
+    get:
+      tags: [Properties]
+      summary: Public show property
+      security: []
+      parameters:
+        - name: property
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Property
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Property" }
+                required: [success, data]
+
+    patch:
+      tags: [Properties]
+      summary: Seller updates own property
+      parameters:
+        - name: property
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "Patch: send only fields you want to change."
+              properties:
+                title: { type: string, minLength: 2, maxLength: 200 }
+                description: { type: string, nullable: true, maxLength: 3000 }
+                address: { type: string, minLength: 2, maxLength: 255 }
+                city: { type: string, minLength: 2, maxLength: 120 }
+                price_per_night: { type: number, minimum: 0 }
+                status: { type: string, enum: [available, unavailable, paused] }
+                360_image_url: { type: string, nullable: true, format: uri, maxLength: 500 }
+                3d_sketchfab_model_url: { type: string, nullable: true, format: uri, maxLength: 500 }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Nekretnina ažurirana." }
+                  data: { $ref: "#/components/schemas/Property" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not seller or not owner)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+
+    delete:
+      tags: [Properties]
+      summary: Seller deletes own property
+      parameters:
+        - name: property
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NullDataResponse"
+        "403":
+          description: Forbidden (not seller or not owner)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+
+  /buyer/reservations:
+    get:
+      tags: [Reservations]
+      summary: Buyer list my reservations
+      responses:
+        "200":
+          description: Reservations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/ResourceCollection_Reservation" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not buyer)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /properties/{property}/reservations:
+    post:
+      tags: [Reservations]
+      summary: Buyer creates reservation for property
+      parameters:
+        - name: property
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                guests: { type: integer, minimum: 1, maximum: 20 }
+              required: [start_date, end_date, guests]
+            examples:
+              create_reservation:
+                value:
+                  start_date: "2026-03-01"
+                  end_date: "2026-03-10"
+                  guests: 2
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Rezervacija kreirana." }
+                  data: { $ref: "#/components/schemas/Reservation" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not buyer)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Business/validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /reservations/{reservation}/cancel:
+    patch:
+      tags: [Reservations]
+      summary: Buyer cancels own reservation
+      parameters:
+        - name: reservation
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Rezervacija otkazana." }
+                  data: { $ref: "#/components/schemas/Reservation" }
+                required: [success, data]
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Not allowed (already started / invalid status)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /seller/reservations:
+    get:
+      tags: [Reservations]
+      summary: Seller list reservations for my properties
+      responses:
+        "200":
+          description: Reservations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/ResourceCollection_Reservation" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not seller)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /seller/reservations/{reservation}/status:
+    patch:
+      tags: [Reservations]
+      summary: Seller updates reservation status
+      parameters:
+        - name: reservation
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [pending, confirmed, cancelled, completed] }
+              required: [status]
+            examples:
+              update_status:
+                value: { status: confirmed }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Status ažuriran." }
+                  data: { $ref: "#/components/schemas/Reservation" }
+                required: [success, data]
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrorResponse" }
+
+  /buyer/maintenance-requests:
+    get:
+      tags: [Maintenance]
+      summary: Buyer list my maintenance requests
+      responses:
+        "200":
+          description: Maintenance requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/ResourceCollection_MaintenanceRequest" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not buyer)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /properties/{property}/maintenance-requests:
+    post:
+      tags: [Maintenance]
+      summary: Buyer creates maintenance request for a property (must have active or recently ended reservation)
+      parameters:
+        - name: property
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, minLength: 2, maxLength: 160 }
+                description: { type: string, maxLength: 3000 }
+                priority: { type: string, enum: [low, medium, high] }
+              required: [title, description, priority]
+            examples:
+              create_request:
+                value:
+                  title: "Broken faucet"
+                  description: "Kitchen faucet is leaking."
+                  priority: medium
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Zahtev kreiran." }
+                  data: { $ref: "#/components/schemas/MaintenanceRequest" }
+                required: [success, data]
+        "422":
+          description: Not allowed (no active/recent reservation) or validation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "403":
+          description: Forbidden (not buyer)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /maintenance-requests:
+    get:
+      tags: [Maintenance]
+      summary: Seller/Admin list maintenance requests (seller gets only assigned_to me)
+      responses:
+        "200":
+          description: Maintenance requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/ResourceCollection_MaintenanceRequest" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not seller/admin)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /maintenance-requests/{maintenanceRequest}/status:
+    patch:
+      tags: [Maintenance]
+      summary: Seller/Admin updates maintenance request status
+      parameters:
+        - name: maintenanceRequest
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [open, in_progress, resolved, closed] }
+              required: [status]
+            examples:
+              update_mr_status:
+                value: { status: in_progress }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Status ažuriran." }
+                  data: { $ref: "#/components/schemas/MaintenanceRequest" }
+                required: [success, data]
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrorResponse" }
+
+  /invoices:
+    get:
+      tags: [Invoices]
+      summary: Seller/Admin list invoices (seller gets only issued_by me)
+      responses:
+        "200":
+          description: Invoices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/ResourceCollection_Invoice" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not seller/admin)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /reservations/{reservation}/invoices:
+    post:
+      tags: [Invoices]
+      summary: Seller/Admin creates invoice for reservation
+      parameters:
+        - name: reservation
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number, minimum: 0 }
+                due_date: { type: string, format: date }
+                description: { type: string, nullable: true, maxLength: 2000 }
+                status: { type: string, nullable: true, enum: [unpaid, paid, overdue, cancelled] }
+              required: [amount, due_date]
+            examples:
+              create_invoice:
+                value:
+                  amount: 150
+                  due_date: "2026-02-20"
+                  description: "Cleaning fee"
+                  status: "unpaid"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Faktura kreirana." }
+                  data: { $ref: "#/components/schemas/Invoice" }
+                required: [success, data]
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrorResponse" }
+
+  /buyer/invoices:
+    get:
+      tags: [Invoices]
+      summary: Buyer list my invoices
+      responses:
+        "200":
+          description: Invoices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/ResourceCollection_Invoice" }
+                required: [success, data]
+        "403":
+          description: Forbidden (not buyer)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /buyer/invoices/{invoice}/pay:
+    post:
+      tags: [Invoices]
+      summary: Buyer pays invoice (allowed only unpaid/overdue)
+      parameters:
+        - name: invoice
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Paid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Faktura plaćena." }
+                  data: { $ref: "#/components/schemas/Invoice" }
+                required: [success, data]
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Not allowed (wrong status)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Admin list users
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/User" }
+                    required: [data]
+                required: [success, data]
+        "403":
+          description: Forbidden (not admin)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /admin/users/{user}/role:
+    patch:
+      tags: [Admin]
+      summary: Admin updates user role
+      parameters:
+        - name: user
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string, enum: [buyer, seller, admin] }
+              required: [role]
+            examples:
+              set_role:
+                value: { role: seller }
+      responses:
+        "200":
+          description: Updated role
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Uloga ažurirana." }
+                  data:
+                    type: object
+                    properties:
+                      user: { $ref: "#/components/schemas/User" }
+                    required: [user]
+                required: [success, data]
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrorResponse" }
+
+  /admin/metrics/summary:
+    get:
+      tags: [Admin]
+      summary: Admin metrics summary
+      responses:
+        "200":
+          description: Metrics summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/AdminMetricsSummary" }
+                required: [success, data]
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /admin/reports:
+    get:
+      tags: [Admin]
+      summary: Admin report by period (date_from/date_to)
+      parameters:
+        - in: query
+          name: date_from
+          required: true
+          schema: { type: string, format: date }
+        - in: query
+          name: date_to
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/AdminReportResponseData" }
+                required: [success, data]
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrorResponse" }
