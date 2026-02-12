@@ -138,11 +138,11 @@ Kroz Laravel migracije se definišu kolone, tipovi, indeksi i strani ključevi, 
 
 1. Klonirajte repozitorijum:
 ```bash
-    git clone https://github.com/elab-development/internet-tehnologije-2025-devtasker_2022_0278.git
+    git clone https://github.com/elab-development/internet-tehnologije-2025-placenow_2022_0139.git
 ```
 2. Pokrenite backend:
 ```bash
-   cd devbe
+   cd place_now_be
    composer install
    php artisan migrate:fresh --seed
    php artisan serve
@@ -150,7 +150,7 @@ Kroz Laravel migracije se definišu kolone, tipovi, indeksi i strani ključevi, 
     
 3. Pokrenite frontend:
 ```bash
-   cd devfe
+   cd place_now_fe
    npm install
    npm start
 ```
@@ -164,7 +164,7 @@ Kroz Laravel migracije se definišu kolone, tipovi, indeksi i strani ključevi, 
 
 1. Klonirajte repozitorijum:
 ```bash
-    git clone https://github.com/elab-development/internet-tehnologije-2025-devtasker_2022_0278.git
+    git clone https://github.com/elab-development/internet-tehnologije-2025-placenow_2022_0139.git
 ```
 
 2. Pokrenite Docker kompoziciju:
