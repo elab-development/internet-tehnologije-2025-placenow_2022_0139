@@ -26,7 +26,7 @@ function toAbsoluteUrl(url) {
 }
 
 /**
- * ✅ 360 LOGIC FROM OLD VERSION (only change requested):
+ * 360 LOGIC FROM OLD VERSION (only change requested):
  * Use pannellum CDN URL (the standalone one can 404 sometimes).
  * Pannellum expects the panorama URL encoded.
  */
