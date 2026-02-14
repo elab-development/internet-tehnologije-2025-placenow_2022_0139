@@ -35,7 +35,7 @@ services:
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: place_now__db
+      DB_DATABASE: place_now_db
       DB_USERNAME: root
       DB_PASSWORD: ""
 
